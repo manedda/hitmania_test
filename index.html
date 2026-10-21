@@ -41,6 +41,7 @@
     </div>
     <div style="margin-top:14px">
       <button class="btn" id="startBtn" onclick="start()">▶ Avvia / Riprendi</button>
+      <button class="btn sec" onclick="testOne()">🔬 Test 1 brano</button>
       <button class="btn sec" id="pauseBtn" onclick="pause()" disabled>⏸ Pausa</button>
       <button class="btn ok" id="dlBtn" onclick="download()">⬇ Scarica previews.json</button>
       <button class="btn" style="background:linear-gradient(90deg,#ff5b6a,#c21d3a)" onclick="reset()">🗑 Azzera progresso</button>
@@ -88,17 +89,38 @@ function pickPreview(data){
   try{ if(data&&data.results){ for(const r of data.results){ if(r.previewUrl){ let art=r.artworkUrl100||r.artworkUrl60||''; if(art)art=art.replace(/\/[0-9]+x[0-9]+bb\./,'/200x200bb.'); return {u:r.previewUrl, r:art}; } } } }catch(e){}
   return null;
 }
-function tryTerm(term,country){
+window._hDiag={fetchOk:0,fetchErr:0,jsonpOk:0,jsonpErr:0,last:''};
+function _jsonp(term,country){
   return new Promise((resolve)=>{
     const cbName="hcb_"+Math.random().toString(36).slice(2);
     let done=false;
     const s=document.createElement('script');
-    const to=setTimeout(()=>{ if(!done){done=true;try{delete window[cbName];}catch(e){}s.remove();resolve(null);} },7000);
-    window[cbName]=(data)=>{ if(done)return; done=true; clearTimeout(to); try{resolve(pickPreview(data));}catch(e){resolve(null);} try{delete window[cbName];}catch(e){} s.remove(); };
-    s.onerror=()=>{ if(!done){done=true;clearTimeout(to);try{delete window[cbName];}catch(e){}s.remove();resolve(null);} };
+    const to=setTimeout(()=>{ if(!done){done=true;_hDiag.jsonpErr++;_hDiag.last='jsonp timeout';try{delete window[cbName];}catch(e){}s.remove();resolve(null);} },7000);
+    window[cbName]=(data)=>{ if(done)return; done=true; clearTimeout(to); _hDiag.jsonpOk++; try{resolve(pickPreview(data));}catch(e){resolve(null);} try{delete window[cbName];}catch(e){} s.remove(); };
+    s.onerror=()=>{ if(!done){done=true;clearTimeout(to);_hDiag.jsonpErr++;_hDiag.last='jsonp onerror';try{delete window[cbName];}catch(e){}s.remove();resolve(null);} };
     s.src=`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&entity=song&country=${country}&limit=10&callback=${cbName}`;
     document.head.appendChild(s);
   });
+}
+async function tryTerm(term,country){
+  const url=`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&entity=song&country=${country}&limit=10`;
+  // metodo primario: fetch (iTunes invia Access-Control-Allow-Origin: * → funziona da https)
+  try{
+    const r=await fetch(url,{cache:'no-store'});
+    if(r.ok){ const d=await r.json(); _hDiag.fetchOk++; const p=pickPreview(d); if(p) return p; }
+    else { _hDiag.fetchErr++; _hDiag.last='HTTP '+r.status; }
+  }catch(e){ _hDiag.fetchErr++; _hDiag.last='fetch: '+(e&&e.message||e); }
+  // fallback JSONP
+  return await _jsonp(term,country);
+}
+async function testOne(){
+  _hDiag={fetchOk:0,fetchErr:0,jsonpOk:0,jsonpErr:0,last:''};
+  const s=SONGS[0];
+  log('🔬 Test singolo: '+s.t+' — '+s.a);
+  const p=await findPreview(s);
+  const msg='Esito test: '+(p?('TROVATO ✅ '+p.u.slice(0,60)+'…'):'NON trovato ❌')
+    +'\nDiag: fetch ok '+_hDiag.fetchOk+'/err '+_hDiag.fetchErr+' · jsonp ok '+_hDiag.jsonpOk+'/err '+_hDiag.jsonpErr+(_hDiag.last?(' · '+_hDiag.last):'');
+  log(msg); alert(msg);
 }
 async function findPreview(s){
   const ct=cleanForSearch(s.t), ca=cleanForSearch(s.a), ca1=cleanForSearch(firstArtist(s.a));
