@@ -20,15 +20,11 @@
   .tag{text-align:center;color:var(--muted);font-size:14px;margin:6px 0 20px}
   .card{background:var(--card);border:1px solid var(--cardborder);border-radius:18px;padding:20px;backdrop-filter:blur(6px);margin-bottom:14px}
   .count{text-align:center;color:var(--cyan);font-weight:800;letter-spacing:1px;text-transform:uppercase;font-size:12px;margin-bottom:8px}
-  .mys{text-align:center;font-size:40px;margin:6px 0}
-  .mys h2{font-size:22px;margin-top:4px}
-  .mys p{color:var(--muted);font-size:14px;margin-top:6px}
 
-  /* player blind box */
   .stage{position:relative;width:100%;aspect-ratio:16/9;border-radius:14px;overflow:hidden;margin:14px 0;background:#000;border:1px solid var(--cardborder)}
   .stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
   .cover{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
-    background:linear-gradient(135deg,#1a0f30,#2a0f45);color:#fff;text-align:center;padding:14px;cursor:default}
+    background:linear-gradient(135deg,#1a0f30,#2a0f45);color:#fff;text-align:center;padding:14px}
   .cover .big{font-size:52px;animation:pulse 1.4s ease-in-out infinite}
   @keyframes pulse{50%{transform:scale(1.08);opacity:.85}}
   .cover .lab{font-weight:800;font-size:15px}
@@ -59,23 +55,51 @@
   <div class="logo">HITMANIA<small>PROVA "AL BUIO" · YOUTUBE</small></div>
   <div class="tag">🎧 Ascolta senza vedere il titolo · indovina · rivela</div>
 
-  <div id="game"></div>
+  <!-- Shell persistente: il player NON viene mai ricreato da zero -->
+  <div class="card" id="playCard">
+    <div class="count" id="count"></div>
+    <div class="stage">
+      <div id="ytplayer"></div>
+      <div class="cover" id="cover">
+        <div class="big">🎧</div>
+        <div class="lab">Brano misterioso</div>
+        <div class="sub">Premi “Ascolta”, poi prova a indovinare titolo e interprete</div>
+      </div>
+    </div>
+    <div id="revealBox" class="reveal hidden">
+      <div class="song" id="rSong"></div>
+      <div class="artist" id="rArtist"></div>
+    </div>
+    <button class="btn sec" id="playBtn">▶️ Ascolta</button>
+    <button class="btn" id="revBtn">👁 Rivela la risposta</button>
+    <div id="scoreRow" class="row hidden">
+      <button class="btn ok" id="okBtn">✓ Indovinato</button>
+      <button class="btn no" id="noBtn">✗ No</button>
+    </div>
+    <div class="score" id="score"></div>
+  </div>
+
+  <div class="card end hidden" id="endCard">
+    <div class="cup">🏆</div>
+    <h2 id="endScore"></h2>
+    <p style="color:var(--muted)" id="endMsg"></p>
+    <button class="btn" id="restartBtn">🔁 Riprova</button>
+  </div>
 
   <div class="note">
     Prototipo a 5 brani. Il player YouTube è coperto per non svelare il titolo finché non premi "Rivela".<br>
-    ⚠️ Gli ID dei video non sono stati verificati automaticamente: controlla che ogni brano parta corretto.
+    ⚠️ Richiede connessione e funziona solo se la pagina è aperta da un indirizzo web (http/https), non da file locale.
   </div>
 </div>
 
 <script>
 /* ===== 5 BRANI DI PROVA — modifica qui gli ID se un brano non è corretto ===== */
-/* Formato: { t: titolo, a: interprete, yt: "ID_VIDEO_YOUTUBE" } */
 const SONGS = [
-  { t:"Despacito",            a:"Luis Fonsi ft. Daddy Yankee", yt:"kJQP7kiw5Fk" },
-  { t:"Bohemian Rhapsody",    a:"Queen",                       yt:"fJ9rUzIMcZQ" },
-  { t:"Uptown Funk",          a:"Mark Ronson ft. Bruno Mars",  yt:"OPf0YbXqDm0" },
-  { t:"Take On Me",           a:"a-ha",                        yt:"djV11Xbc914" },
-  { t:"Gangnam Style",        a:"PSY",                         yt:"9bZkp7q19f0" }
+  { t:"Despacito",         a:"Luis Fonsi ft. Daddy Yankee", yt:"kJQP7kiw5Fk" },
+  { t:"Bohemian Rhapsody", a:"Queen",                       yt:"fJ9rUzIMcZQ" },
+  { t:"Uptown Funk",       a:"Mark Ronson ft. Bruno Mars",  yt:"OPf0YbXqDm0" },
+  { t:"Take On Me",        a:"a-ha",                        yt:"djV11Xbc914" },
+  { t:"Gangnam Style",     a:"PSY",                         yt:"9bZkp7q19f0" }
 ];
 
 let idx=0, score=0, player=null, apiReady=false, pendingPlay=false;
@@ -84,83 +108,79 @@ let idx=0, score=0, player=null, apiReady=false, pendingPlay=false;
 const tag=document.createElement('script');
 tag.src="https://www.youtube.com/iframe_api";
 document.head.appendChild(tag);
-window.onYouTubeIframeAPIReady=function(){ apiReady=true; buildPlayer(); };
+window.onYouTubeIframeAPIReady=function(){ apiReady=true; createPlayer(); };
 
-function buildPlayer(){
+/* Crea (o ricrea) il player sul brano corrente. Chiave del fix: destroy + new a ogni brano. */
+function createPlayer(){
   if(!apiReady) return;
-  if(player){ try{player.loadVideoById(SONGS[idx].yt);}catch(e){} return; }
+  const mount=document.getElementById('ytplayer');
+  if(!mount) return;
+  if(player){ try{player.destroy();}catch(e){} player=null; }
+  // il div ytplayer viene sostituito dall'iframe: lo ripristino prima di ricrearlo
+  mount.innerHTML='';
   player=new YT.Player('ytplayer',{
     height:'100%',width:'100%',
     videoId:SONGS[idx].yt,
     playerVars:{controls:0,disablekb:1,modestbranding:1,rel:0,playsinline:1,fs:0},
-    events:{ 'onReady':()=>{ if(pendingPlay){ player.playVideo(); pendingPlay=false; } } }
+    events:{ 'onReady':()=>{ if(pendingPlay){ try{player.playVideo();}catch(e){} pendingPlay=false; } } }
   });
 }
 
-function render(){
-  const g=document.getElementById('game');
-  if(idx>=SONGS.length){ return renderEnd(); }
+function loadSong(){
   const s=SONGS[idx];
-  g.innerHTML=`
-    <div class="card">
-      <div class="count">Brano ${idx+1} di ${SONGS.length}</div>
-      <div class="stage">
-        <div id="ytmount"><div id="ytplayer"></div></div>
-        <div class="cover" id="cover">
-          <div class="big">🎧</div>
-          <div class="lab">Brano misterioso</div>
-          <div class="sub">Premi “Ascolta”, poi prova a indovinare titolo e interprete</div>
-        </div>
-      </div>
-      <div id="revealBox" class="reveal hidden">
-        <div class="song">${esc(s.t)}</div>
-        <div class="artist">${esc(s.a)}</div>
-      </div>
-      <button class="btn sec" id="playBtn">▶️ Ascolta</button>
-      <button class="btn" id="revBtn">👁 Rivela la risposta</button>
-      <div id="scoreRow" class="row hidden">
-        <button class="btn ok" id="okBtn">✓ Indovinato</button>
-        <button class="btn no" id="noBtn">✗ No</button>
-      </div>
-      <div class="score">Punteggio: ${score} / ${SONGS.length}</div>
-    </div>`;
+  document.getElementById('count').textContent=`Brano ${idx+1} di ${SONGS.length}`;
+  document.getElementById('score').textContent=`Punteggio: ${score} / ${SONGS.length}`;
+  // reset UI del brano
+  document.getElementById('cover').classList.remove('revealed');
+  document.getElementById('revealBox').classList.add('hidden');
+  document.getElementById('revBtn').classList.remove('hidden');
+  document.getElementById('scoreRow').classList.add('hidden');
+  document.getElementById('rSong').textContent=s.t;
+  document.getElementById('rArtist').textContent=s.a;
+  // ricrea il player per questo brano
+  createPlayer();
+}
 
-  // (re)build player for this song
-  if(apiReady){ buildPlayer(); }
-
-  document.getElementById('playBtn').onclick=()=>{
-    if(player&&player.playVideo){ try{player.playVideo();}catch(e){} }
-    else { pendingPlay=true; } // parte appena l'API è pronta
-  };
-  document.getElementById('revBtn').onclick=()=>{
-    document.getElementById('cover').classList.add('revealed');
-    document.getElementById('revealBox').classList.remove('hidden');
-    document.getElementById('revBtn').classList.add('hidden');
-    document.getElementById('scoreRow').classList.remove('hidden');
-  };
-  document.getElementById('okBtn').onclick=()=>{ score++; next(); };
-  document.getElementById('noBtn').onclick=()=>{ next(); };
+function reveal(){
+  document.getElementById('cover').classList.add('revealed');
+  document.getElementById('revealBox').classList.remove('hidden');
+  document.getElementById('revBtn').classList.add('hidden');
+  document.getElementById('scoreRow').classList.remove('hidden');
 }
 
 function next(){
   if(player&&player.stopVideo){ try{player.stopVideo();}catch(e){} }
-  idx++; render();
+  idx++;
+  if(idx>=SONGS.length){ return showEnd(); }
+  loadSong();
 }
 
-function renderEnd(){
-  const g=document.getElementById('game');
-  g.innerHTML=`
-    <div class="card end">
-      <div class="cup">🏆</div>
-      <h2>${score} / ${SONGS.length}</h2>
-      <p style="color:var(--muted)">${score===SONGS.length?'Perfetto! Orecchio da intenditore 🎶':(score>=3?'Niente male!':'Si può fare di meglio 😉')}</p>
-      <button class="btn" onclick="restart()">🔁 Riprova</button>
-    </div>`;
+function showEnd(){
+  document.getElementById('playCard').classList.add('hidden');
+  const e=document.getElementById('endCard');
+  e.classList.remove('hidden');
+  document.getElementById('endScore').textContent=`${score} / ${SONGS.length}`;
+  document.getElementById('endMsg').textContent = score===SONGS.length?'Perfetto! Orecchio da intenditore 🎶':(score>=3?'Niente male!':'Si può fare di meglio 😉');
 }
-function restart(){ idx=0; score=0; render(); if(apiReady)buildPlayer(); }
-function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 
-render();
+function restart(){
+  idx=0; score=0;
+  document.getElementById('endCard').classList.add('hidden');
+  document.getElementById('playCard').classList.remove('hidden');
+  loadSong();
+}
+
+/* Event listeners (una volta sola, sulla shell persistente) */
+document.getElementById('playBtn').onclick=()=>{
+  if(player&&player.playVideo){ try{player.playVideo();}catch(e){} }
+  else { pendingPlay=true; }
+};
+document.getElementById('revBtn').onclick=reveal;
+document.getElementById('okBtn').onclick=()=>{ score++; next(); };
+document.getElementById('noBtn').onclick=next;
+document.getElementById('restartBtn').onclick=restart;
+
+loadSong();
 </script>
 </body>
 </html>
