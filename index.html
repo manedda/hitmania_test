@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0618">
+<title>Hitmania — Prova "Al Buio" (YouTube)</title>
+<style>
+  :root{
+    --bg:#0b0618;--bg2:#14092b;--pink:#ff2e93;--purple:#8a2be2;--cyan:#18e0ff;--yellow:#ffd23f;--green:#2bff88;
+    --text:#fff;--muted:#b9a8d9;--card:rgba(255,255,255,.06);--cardborder:rgba(255,255,255,.14);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Trebuchet MS','Segoe UI',system-ui,sans-serif;color:var(--text);min-height:100vh;
+    background:radial-gradient(1000px 500px at 100% 0%,rgba(255,46,147,.25),transparent 55%),radial-gradient(900px 600px at 0% 100%,rgba(24,224,255,.18),transparent 55%),linear-gradient(160deg,var(--bg),var(--bg2));}
+  .wrap{max-width:560px;margin:0 auto;padding:26px 18px 60px}
+  .logo{text-align:center;font-weight:900;font-size:clamp(34px,10vw,56px);line-height:.9;transform:rotate(-2deg);
+    background:linear-gradient(90deg,var(--pink),var(--yellow),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .logo small{display:block;font-size:.3em;letter-spacing:4px;color:var(--cyan);-webkit-text-fill-color:var(--cyan);margin-top:6px}
+  .tag{text-align:center;color:var(--muted);font-size:14px;margin:6px 0 20px}
+  .card{background:var(--card);border:1px solid var(--cardborder);border-radius:18px;padding:20px;backdrop-filter:blur(6px);margin-bottom:14px}
+  .count{text-align:center;color:var(--cyan);font-weight:800;letter-spacing:1px;text-transform:uppercase;font-size:12px;margin-bottom:8px}
+  .mys{text-align:center;font-size:40px;margin:6px 0}
+  .mys h2{font-size:22px;margin-top:4px}
+  .mys p{color:var(--muted);font-size:14px;margin-top:6px}
+
+  /* player blind box */
+  .stage{position:relative;width:100%;aspect-ratio:16/9;border-radius:14px;overflow:hidden;margin:14px 0;background:#000;border:1px solid var(--cardborder)}
+  .stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+  .cover{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+    background:linear-gradient(135deg,#1a0f30,#2a0f45);color:#fff;text-align:center;padding:14px;cursor:default}
+  .cover .big{font-size:52px;animation:pulse 1.4s ease-in-out infinite}
+  @keyframes pulse{50%{transform:scale(1.08);opacity:.85}}
+  .cover .lab{font-weight:800;font-size:15px}
+  .cover .sub{color:#c9b8ee;font-size:12px;max-width:80%}
+  .cover.revealed{display:none}
+  .reveal{text-align:center;padding:10px}
+  .reveal .song{font-size:24px;font-weight:900}
+  .reveal .artist{color:var(--yellow);font-size:17px;font-weight:700;margin-top:2px}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1.5px solid rgba(255,46,147,.55);border-radius:14px;padding:15px 20px;font-size:16px;font-weight:800;cursor:pointer;color:#fff;font-family:inherit;width:100%;
+    background:rgba(255,46,147,.1);backdrop-filter:blur(8px);box-shadow:0 0 18px rgba(255,46,147,.3),inset 0 0 14px rgba(255,46,147,.12);transition:.2s;margin-top:10px}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 0 30px rgba(255,46,147,.6)}
+  .btn:active{transform:scale(.98)}
+  .btn.sec{background:rgba(24,224,255,.1);border-color:rgba(24,224,255,.55);box-shadow:0 0 18px rgba(24,224,255,.28),inset 0 0 14px rgba(24,224,255,.12)}
+  .btn.ok{background:rgba(43,255,136,.12);border-color:rgba(43,255,136,.55);color:#eafff3;box-shadow:0 0 18px rgba(43,255,136,.3),inset 0 0 14px rgba(43,255,136,.14)}
+  .btn.no{background:rgba(255,91,106,.12);border-color:rgba(255,91,106,.55);color:#ffe9eb;box-shadow:0 0 18px rgba(255,91,106,.3)}
+  .row{display:flex;gap:10px}.row .btn{flex:1}
+  .score{text-align:center;margin-top:16px;font-weight:800;color:var(--muted)}
+  .note{font-size:11.5px;color:var(--muted);text-align:center;margin-top:14px;line-height:1.5;opacity:.8}
+  .hidden{display:none}
+  .end{text-align:center}
+  .end .cup{font-size:70px}
+  .end h2{font-size:30px;margin:6px 0;background:linear-gradient(90deg,var(--yellow),var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">HITMANIA<small>PROVA "AL BUIO" · YOUTUBE</small></div>
+  <div class="tag">🎧 Ascolta senza vedere il titolo · indovina · rivela</div>
+
+  <div id="game"></div>
+
+  <div class="note">
+    Prototipo a 5 brani. Il player YouTube è coperto per non svelare il titolo finché non premi "Rivela".<br>
+    ⚠️ Gli ID dei video non sono stati verificati automaticamente: controlla che ogni brano parta corretto.
+  </div>
+</div>
+
+<script>
+/* ===== 5 BRANI DI PROVA — modifica qui gli ID se un brano non è corretto ===== */
+/* Formato: { t: titolo, a: interprete, yt: "ID_VIDEO_YOUTUBE" } */
+const SONGS = [
+  { t:"Despacito",            a:"Luis Fonsi ft. Daddy Yankee", yt:"kJQP7kiw5Fk" },
+  { t:"Bohemian Rhapsody",    a:"Queen",                       yt:"fJ9rUzIMcZQ" },
+  { t:"Uptown Funk",          a:"Mark Ronson ft. Bruno Mars",  yt:"OPf0YbXqDm0" },
+  { t:"Take On Me",           a:"a-ha",                        yt:"djV11Xbc914" },
+  { t:"Gangnam Style",        a:"PSY",                         yt:"9bZkp7q19f0" }
+];
+
+let idx=0, score=0, player=null, apiReady=false, pendingPlay=false;
+
+/* YouTube IFrame API */
+const tag=document.createElement('script');
+tag.src="https://www.youtube.com/iframe_api";
+document.head.appendChild(tag);
+window.onYouTubeIframeAPIReady=function(){ apiReady=true; buildPlayer(); };
+
+function buildPlayer(){
+  if(!apiReady) return;
+  if(player){ try{player.loadVideoById(SONGS[idx].yt);}catch(e){} return; }
+  player=new YT.Player('ytplayer',{
+    height:'100%',width:'100%',
+    videoId:SONGS[idx].yt,
+    playerVars:{controls:0,disablekb:1,modestbranding:1,rel:0,playsinline:1,fs:0},
+    events:{ 'onReady':()=>{ if(pendingPlay){ player.playVideo(); pendingPlay=false; } } }
+  });
+}
+
+function render(){
+  const g=document.getElementById('game');
+  if(idx>=SONGS.length){ return renderEnd(); }
+  const s=SONGS[idx];
+  g.innerHTML=`
+    <div class="card">
+      <div class="count">Brano ${idx+1} di ${SONGS.length}</div>
+      <div class="stage">
+        <div id="ytmount"><div id="ytplayer"></div></div>
+        <div class="cover" id="cover">
+          <div class="big">🎧</div>
+          <div class="lab">Brano misterioso</div>
+          <div class="sub">Premi “Ascolta”, poi prova a indovinare titolo e interprete</div>
+        </div>
+      </div>
+      <div id="revealBox" class="reveal hidden">
+        <div class="song">${esc(s.t)}</div>
+        <div class="artist">${esc(s.a)}</div>
+      </div>
+      <button class="btn sec" id="playBtn">▶️ Ascolta</button>
+      <button class="btn" id="revBtn">👁 Rivela la risposta</button>
+      <div id="scoreRow" class="row hidden">
+        <button class="btn ok" id="okBtn">✓ Indovinato</button>
+        <button class="btn no" id="noBtn">✗ No</button>
+      </div>
+      <div class="score">Punteggio: ${score} / ${SONGS.length}</div>
+    </div>`;
+
+  // (re)build player for this song
+  if(apiReady){ buildPlayer(); }
+
+  document.getElementById('playBtn').onclick=()=>{
+    if(player&&player.playVideo){ try{player.playVideo();}catch(e){} }
+    else { pendingPlay=true; } // parte appena l'API è pronta
+  };
+  document.getElementById('revBtn').onclick=()=>{
+    document.getElementById('cover').classList.add('revealed');
+    document.getElementById('revealBox').classList.remove('hidden');
+    document.getElementById('revBtn').classList.add('hidden');
+    document.getElementById('scoreRow').classList.remove('hidden');
+  };
+  document.getElementById('okBtn').onclick=()=>{ score++; next(); };
+  document.getElementById('noBtn').onclick=()=>{ next(); };
+}
+
+function next(){
+  if(player&&player.stopVideo){ try{player.stopVideo();}catch(e){} }
+  idx++; render();
+}
+
+function renderEnd(){
+  const g=document.getElementById('game');
+  g.innerHTML=`
+    <div class="card end">
+      <div class="cup">🏆</div>
+      <h2>${score} / ${SONGS.length}</h2>
+      <p style="color:var(--muted)">${score===SONGS.length?'Perfetto! Orecchio da intenditore 🎶':(score>=3?'Niente male!':'Si può fare di meglio 😉')}</p>
+      <button class="btn" onclick="restart()">🔁 Riprova</button>
+    </div>`;
+}
+function restart(){ idx=0; score=0; render(); if(apiReady)buildPlayer(); }
+function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+render();
+</script>
+</body>
+</html>
