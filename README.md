@@ -1,0 +1,1 @@
+# hitmania_test
