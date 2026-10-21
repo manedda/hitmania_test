@@ -2,248 +2,124 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0b0618">
-<title>Hitmania — Confronto Player (Apple vs YouTube)</title>
+<title>Hitmania — Test iPhone</title>
 <style>
-  :root{
-    --bg:#0b0618;--bg2:#14092b;--pink:#ff2e93;--purple:#8a2be2;--cyan:#18e0ff;--yellow:#ffd23f;--green:#2bff88;
-    --text:#fff;--muted:#b9a8d9;--card:rgba(255,255,255,.06);--cardborder:rgba(255,255,255,.14);
-  }
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  body{font-family:'Trebuchet MS','Segoe UI',system-ui,sans-serif;color:var(--text);min-height:100vh;
-    background:radial-gradient(1000px 500px at 100% 0%,rgba(255,46,147,.25),transparent 55%),radial-gradient(900px 600px at 0% 100%,rgba(24,224,255,.18),transparent 55%),linear-gradient(160deg,var(--bg),var(--bg2));}
-  .wrap{max-width:560px;margin:0 auto;padding:24px 18px 60px}
-  .logo{text-align:center;font-weight:900;font-size:clamp(30px,9vw,48px);line-height:.9;transform:rotate(-2deg);
-    background:linear-gradient(90deg,var(--pink),var(--yellow),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
-  .logo small{display:block;font-size:.32em;letter-spacing:3px;color:var(--cyan);-webkit-text-fill-color:var(--cyan);margin-top:6px}
-  .tag{text-align:center;color:var(--muted);font-size:13px;margin:6px 0 18px}
-
-  .tabs{display:flex;gap:8px;margin-bottom:16px}
-  .tabs .tb{flex:1;text-align:center;padding:13px 8px;border-radius:14px;border:2px solid var(--cardborder);background:rgba(0,0,0,.25);font-weight:800;font-size:14px;cursor:pointer;transition:.15s}
-  .tabs .tb .s{display:block;font-size:10px;font-weight:600;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:1px}
-  .tabs .tb.apple.on{border-color:var(--green);background:linear-gradient(135deg,rgba(43,255,136,.25),rgba(24,224,255,.12))}
-  .tabs .tb.yt.on{border-color:#ff5b6a;background:linear-gradient(135deg,rgba(255,61,61,.28),rgba(154,15,26,.2))}
-
-  .card{background:var(--card);border:1px solid var(--cardborder);border-radius:18px;padding:20px;backdrop-filter:blur(6px)}
-  .count{text-align:center;color:var(--cyan);font-weight:800;letter-spacing:1px;text-transform:uppercase;font-size:12px;margin-bottom:10px}
-
-  /* Apple blind box */
-  .applebox{text-align:center;padding:10px 0}
-  .disc{width:120px;height:120px;border-radius:50%;margin:6px auto 14px;
-    background:radial-gradient(circle at 50% 50%,#1a1a1a 0 18%,#000 18% 20%,#222 20% 100%);
-    border:6px solid #111;box-shadow:0 0 0 6px #1b1b1b,0 12px 40px rgba(0,0,0,.6);display:grid;place-items:center;position:relative}
-  .disc::before{content:"";width:24px;height:24px;border-radius:50%;background:linear-gradient(var(--pink),var(--purple))}
-  .disc.spin{animation:spin 3s linear infinite}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .status{color:var(--muted);font-size:13px;min-height:20px;margin-top:4px}
-  .bars{display:flex;gap:4px;align-items:flex-end;height:40px;justify-content:center;margin:10px 0}
-  .bars span{width:6px;background:linear-gradient(var(--cyan),var(--pink));border-radius:3px;height:20%}
-  .bars.playing span{animation:eq .8s ease-in-out infinite}
-  .bars span:nth-child(2){animation-delay:.1s}.bars span:nth-child(3){animation-delay:.2s}.bars span:nth-child(4){animation-delay:.3s}.bars span:nth-child(5){animation-delay:.15s}
-  @keyframes eq{0%,100%{height:15%}50%{height:95%}}
-
-  /* YouTube blind box */
-  .stage{position:relative;width:100%;aspect-ratio:16/9;border-radius:14px;overflow:hidden;margin:10px 0;background:#000;border:1px solid var(--cardborder)}
-  .stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
-  .cover{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
-    background:linear-gradient(135deg,#1a0f30,#2a0f45);text-align:center;padding:12px}
-  .cover .big{font-size:46px;animation:pulse 1.4s ease-in-out infinite}
-  @keyframes pulse{50%{transform:scale(1.08);opacity:.85}}
-  .cover.revealed{display:none}
-
-  .reveal{text-align:center;padding:8px;margin-top:4px}
-  .reveal.hidden{display:none}
-  .reveal .song{font-size:22px;font-weight:900}
-  .reveal .artist{color:var(--yellow);font-size:16px;font-weight:700;margin-top:2px}
-
-  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1.5px solid rgba(255,46,147,.55);border-radius:14px;padding:14px 18px;font-size:15px;font-weight:800;cursor:pointer;color:#fff;font-family:inherit;width:100%;
-    background:rgba(255,46,147,.1);box-shadow:0 0 16px rgba(255,46,147,.28),inset 0 0 12px rgba(255,46,147,.1);transition:.2s;margin-top:10px}
-  .btn:hover{transform:translateY(-2px)}
-  .btn:active{transform:scale(.98)}
-  .btn.sec{background:rgba(24,224,255,.1);border-color:rgba(24,224,255,.55);box-shadow:0 0 16px rgba(24,224,255,.25)}
-  .btn.ok{background:rgba(43,255,136,.12);border-color:rgba(43,255,136,.55);color:#eafff3}
-  .btn.no{background:rgba(255,91,106,.12);border-color:rgba(255,91,106,.55);color:#ffe9eb}
-  .row{display:flex;gap:10px}.row .btn{flex:1}
-  .hidden{display:none}
-  .score{text-align:center;margin-top:14px;font-weight:800;color:var(--muted)}
-  .note{font-size:11px;color:var(--muted);text-align:center;margin-top:16px;line-height:1.5;opacity:.82}
-  .verdict{background:rgba(0,0,0,.25);border:1px solid var(--cardborder);border-radius:12px;padding:12px;margin-top:14px;font-size:12px;line-height:1.6}
-  .verdict b{color:var(--cyan)}
+  *{box-sizing:border-box;margin:0;padding:0;font-family:'Trebuchet MS','Segoe UI',system-ui,sans-serif}
+  body{background:linear-gradient(160deg,#0b0618,#14092b);color:#fff;min-height:100vh;padding:22px 16px}
+  .wrap{max-width:560px;margin:0 auto}
+  h1{font-size:24px;margin-bottom:4px;background:linear-gradient(90deg,#ff2e93,#ffd23f,#18e0ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:#b9a8d9;font-size:14px;margin-bottom:18px}
+  .card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:16px;margin-bottom:12px}
+  .row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+  .row:last-child{border-bottom:none}
+  .row .nm{flex:1;font-size:14px}
+  .row .nm small{display:block;color:#8a7bb0;font-size:11px;word-break:break-all}
+  .badge{font-size:12px;font-weight:800;padding:5px 10px;border-radius:999px;white-space:nowrap}
+  .wait{background:rgba(255,255,255,.12);color:#b9a8d9}
+  .ok{background:rgba(43,255,136,.2);color:#2bff88;border:1px solid rgba(43,255,136,.5)}
+  .ko{background:rgba(255,91,106,.2);color:#ff8a94;border:1px solid rgba(255,91,106,.5)}
+  .btn{display:block;width:100%;border:none;border-radius:14px;padding:16px;font-size:17px;font-weight:800;cursor:pointer;color:#fff;
+    background:linear-gradient(90deg,#ff2e93,#8a2be2);margin-top:8px;font-family:inherit}
+  .summary{margin-top:14px;padding:14px;border-radius:12px;background:rgba(0,0,0,.3);border:1px dashed rgba(255,255,255,.2);font-size:13px;line-height:1.6;white-space:pre-wrap}
+  .hint{color:#b9a8d9;font-size:12px;margin-top:10px;line-height:1.5}
+  code{background:rgba(0,0,0,.4);padding:1px 5px;border-radius:5px;font-size:12px}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="logo">HITMANIA<small>CONFRONTO PLAYER</small></div>
-  <div class="tag">🎧 Stessi 5 brani · prova i due metodi "al buio" e scegli</div>
+  <h1>🔬 Hitmania — Test iPhone</h1>
+  <p class="sub">Verifichiamo quali domini Apple riesce a raggiungere il tuo telefono. Premi il pulsante e aspetta ~20 secondi.</p>
 
-  <div class="tabs">
-    <div class="tb apple on" id="tabApple" onclick="switchTab('apple')">🍏 Apple Preview<span class="s">audio 30s</span></div>
-    <div class="tb yt" id="tabYt" onclick="switchTab('yt')">▶️ YouTube<span class="s">video coperto</span></div>
+  <button class="btn" id="runBtn" onclick="runTests()">▶ Avvia il test</button>
+
+  <div class="card" id="results" style="display:none">
+    <div class="row"><div class="nm">1. API di ricerca iTunes<small>itunes.apple.com</small></div><span class="badge wait" id="t1">in attesa</span></div>
+    <div class="row"><div class="nm">2. Dominio audio anteprime<small>audio-ssl.itunes.apple.com</small></div><span class="badge wait" id="t2">in attesa</span></div>
+    <div class="row"><div class="nm">3. CDN copertine<small>is1-ssl.mzstatic.com</small></div><span class="badge wait" id="t3">in attesa</span></div>
+    <div class="row"><div class="nm">4. Riproduzione audio reale<small>&lt;audio&gt; da dominio Apple</small></div><span class="badge wait" id="t4">in attesa</span></div>
+    <div class="row"><div class="nm">5. Rete generica (controllo)<small>cloudflare.com</small></div><span class="badge wait" id="t5">in attesa</span></div>
   </div>
 
-  <!-- APPLE -->
-  <div class="card" id="appleCard">
-    <div class="count" id="aCount"></div>
-    <div class="applebox">
-      <div class="disc" id="aDisc"></div>
-      <div class="bars" id="aBars"><span></span><span></span><span></span><span></span><span></span></div>
-      <div class="status" id="aStatus">Premi “Ascolta” per sentire 30 secondi del brano</div>
-    </div>
-    <div class="reveal hidden" id="aReveal"><div class="song" id="aSong"></div><div class="artist" id="aArtist"></div></div>
-    <audio id="aAudio" preload="none"></audio>
-    <button class="btn sec" id="aPlay">▶️ Ascolta (30s)</button>
-    <button class="btn" id="aRev">👁 Rivela la risposta</button>
-    <div class="row hidden" id="aScoreRow"><button class="btn ok" id="aOk">✓ Indovinato</button><button class="btn no" id="aNo">✗ No</button></div>
-    <div class="score" id="aScore"></div>
-    <div class="verdict">🍏 <b>Apple Preview</b>: solo audio → il titolo è nascosto per natura, nessun player da coprire. Funziona anche da file locale. Il brano viene trovato automaticamente dal titolo (nessun ID da curare a mano).</div>
-  </div>
+  <div class="summary" id="summary" style="display:none"></div>
 
-  <!-- YOUTUBE -->
-  <div class="card hidden" id="ytCard">
-    <div class="count" id="yCount"></div>
-    <div class="stage">
-      <div id="ytplayer"></div>
-      <div class="cover" id="yCover"><div class="big">🎧</div><div style="font-weight:800;font-size:14px">Brano misterioso</div></div>
-    </div>
-    <div class="reveal hidden" id="yReveal"><div class="song" id="ySong"></div><div class="artist" id="yArtist"></div></div>
-    <button class="btn sec" id="yPlay">▶️ Ascolta</button>
-    <button class="btn" id="yRev">👁 Rivela la risposta</button>
-    <div class="row hidden" id="yScoreRow"><button class="btn ok" id="yOk">✓ Indovinato</button><button class="btn no" id="yNo">✗ No</button></div>
-    <div class="score" id="yScore"></div>
-    <div class="verdict">▶️ <b>YouTube</b>: video coperto da un riquadro. Richiede connessione e apertura da indirizzo web (non da file). Serve un ID video per brano (curato a mano) e coprire il player è in tensione con i ToS di YouTube.</div>
-  </div>
-
-  <div class="note">
-    Prototipo di confronto a 5 brani. Nessuno dei due sovrascrive il gioco principale.<br>
-    Apple usa le anteprime pubbliche di 30s dell'iTunes Store; YouTube usa il player incorporato.
-  </div>
+  <p class="hint">ℹ️ Questo test non salva nulla e non richiede login. Serve solo a capire perché le anteprime non partono sul tuo iPhone. Quando finisce, <b>copia e incolla il riassunto</b> nella chat.</p>
 </div>
 
+<audio id="probeAudio" preload="auto" crossorigin="anonymous"></audio>
+
 <script>
-const SONGS=[
-  {t:"Despacito",a:"Luis Fonsi",yt:"kJQP7kiw5Fk"},
-  {t:"Bohemian Rhapsody",a:"Queen",yt:"fJ9rUzIMcZQ"},
-  {t:"Uptown Funk",a:"Mark Ronson Bruno Mars",yt:"OPf0YbXqDm0"},
-  {t:"Take On Me",a:"a-ha",yt:"djV11Xbc914"},
-  {t:"Gangnam Style",a:"PSY",yt:"9bZkp7q19f0"}
-];
-
-/* ============ TAB SWITCH ============ */
-let current="apple";
-function switchTab(which){
-  current=which;
-  document.getElementById('tabApple').classList.toggle('on',which==="apple");
-  document.getElementById('tabYt').classList.toggle('on',which==="yt");
-  document.getElementById('appleCard').classList.toggle('hidden',which!=="apple");
-  document.getElementById('ytCard').classList.toggle('hidden',which!=="yt");
-  // stop any audio/video when switching
-  try{document.getElementById('aAudio').pause();}catch(e){}
-  if(ytPlayer&&ytPlayer.stopVideo){try{ytPlayer.stopVideo();}catch(e){}}
-  document.getElementById('aBars').classList.remove('playing');
-  document.getElementById('aDisc').classList.remove('spin');
+function setBadge(id, state, txt){
+  const el=document.getElementById(id);
+  el.className='badge '+(state==='ok'?'ok':state==='ko'?'ko':'wait');
+  el.textContent=txt;
 }
 
-/* ============ APPLE PREVIEW (iTunes Search via JSONP) ============ */
-let aIdx=0,aScore=0,aPreviewUrl=null;
-const aAudio=document.getElementById('aAudio');
-
-function itunesSearch(term,cb){
-  // JSONP: works cross-origin and even from file://
-  const cbName="itcb_"+Math.random().toString(36).slice(2);
-  window[cbName]=(data)=>{ cb(data); delete window[cbName]; s.remove(); };
-  const s=document.createElement('script');
-  const q=encodeURIComponent(term);
-  s.src=`https://itunes.apple.com/search?term=${q}&media=music&entity=song&limit=1&callback=${cbName}`;
-  s.onerror=()=>{ cb(null); };
-  document.head.appendChild(s);
-}
-
-function aLoad(){
-  const s=SONGS[aIdx];
-  document.getElementById('aCount').textContent=`Brano ${aIdx+1} di ${SONGS.length}`;
-  document.getElementById('aScore').textContent=`Punteggio: ${aScore} / ${SONGS.length}`;
-  document.getElementById('aReveal').classList.add('hidden');
-  document.getElementById('aRev').classList.remove('hidden');
-  document.getElementById('aScoreRow').classList.add('hidden');
-  document.getElementById('aSong').textContent=s.t;
-  document.getElementById('aArtist').textContent=s.a;
-  document.getElementById('aStatus').textContent='Premi “Ascolta” per sentire 30 secondi del brano';
-  document.getElementById('aBars').classList.remove('playing');
-  document.getElementById('aDisc').classList.remove('spin');
-  aPreviewUrl=null;
-}
-
-document.getElementById('aPlay').onclick=()=>{
-  const s=SONGS[aIdx];
-  const st=document.getElementById('aStatus');
-  if(aPreviewUrl){ playApple(); return; }
-  st.textContent='🔎 Cerco l\'anteprima…';
-  itunesSearch(s.t+" "+s.a,(data)=>{
-    if(data&&data.results&&data.results.length&&data.results[0].previewUrl){
-      aPreviewUrl=data.results[0].previewUrl;
-      playApple();
-    }else{
-      st.textContent='⚠️ Anteprima non trovata per questo brano';
-    }
+// Test di raggiungibilità dominio con fetch no-cors: se risolve (anche opaco) = raggiungibile; se rigetta/timeout = bloccato
+function probeDomain(url, timeoutMs){
+  return new Promise((resolve)=>{
+    let done=false;
+    const to=setTimeout(()=>{ if(!done){done=true;resolve({ok:false,reason:'timeout'});} }, timeoutMs||6000);
+    fetch(url,{mode:'no-cors',cache:'no-store'})
+      .then(()=>{ if(!done){done=true;clearTimeout(to);resolve({ok:true});} })
+      .catch((e)=>{ if(!done){done=true;clearTimeout(to);resolve({ok:false,reason:(e&&e.message)||'errore'});} });
   });
-};
-function playApple(){
-  aAudio.src=aPreviewUrl;
-  aAudio.play().then(()=>{
-    document.getElementById('aStatus').textContent='🎧 In riproduzione… indovina!';
-    document.getElementById('aBars').classList.add('playing');
-    document.getElementById('aDisc').classList.add('spin');
-  }).catch(()=>{ document.getElementById('aStatus').textContent='⚠️ Tocca di nuovo “Ascolta” (blocco autoplay)'; });
 }
-aAudio.onended=()=>{ document.getElementById('aBars').classList.remove('playing');document.getElementById('aDisc').classList.remove('spin');document.getElementById('aStatus').textContent='Anteprima finita · Rivela o riascolta'; };
-document.getElementById('aRev').onclick=()=>{
-  document.getElementById('aReveal').classList.remove('hidden');
-  document.getElementById('aRev').classList.add('hidden');
-  document.getElementById('aScoreRow').classList.remove('hidden');
-};
-document.getElementById('aOk').onclick=()=>{aScore++;aNext();};
-document.getElementById('aNo').onclick=()=>aNext();
-function aNext(){ try{aAudio.pause();}catch(e){} aIdx++; if(aIdx>=SONGS.length){aIdx=0;aScore=0;} aLoad(); }
 
-/* ============ YOUTUBE ============ */
-let yIdx=0,yScore=0,ytPlayer=null,ytReady=false,yPending=false;
-const tag=document.createElement('script');tag.src="https://www.youtube.com/iframe_api";document.head.appendChild(tag);
-window.onYouTubeIframeAPIReady=()=>{ ytReady=true; yCreate(); };
-function yCreate(){
-  if(!ytReady)return;
-  const m=document.getElementById('ytplayer');if(!m)return;
-  if(ytPlayer){try{ytPlayer.destroy();}catch(e){}ytPlayer=null;}
-  m.innerHTML='';
-  ytPlayer=new YT.Player('ytplayer',{height:'100%',width:'100%',videoId:SONGS[yIdx].yt,
-    playerVars:{controls:0,disablekb:1,modestbranding:1,rel:0,playsinline:1,fs:0},
-    events:{'onReady':()=>{if(yPending){try{ytPlayer.playVideo();}catch(e){}yPending=false;}}}});
+// Test audio reale: prova a caricare metadati di un file audio Apple noto
+function probeAudioPlay(url, timeoutMs){
+  return new Promise((resolve)=>{
+    let done=false;
+    const a=document.getElementById('probeAudio');
+    const to=setTimeout(()=>{ if(!done){done=true;cleanup();resolve({ok:false,reason:'timeout'});} }, timeoutMs||8000);
+    function cleanup(){ a.oncanplay=null;a.onloadeddata=null;a.onerror=null; }
+    a.oncanplay=()=>{ if(!done){done=true;clearTimeout(to);cleanup();resolve({ok:true});} };
+    a.onloadeddata=()=>{ if(!done){done=true;clearTimeout(to);cleanup();resolve({ok:true});} };
+    a.onerror=()=>{ if(!done){done=true;clearTimeout(to);cleanup();resolve({ok:false,reason:'audio error'});} };
+    try{ a.src=url; a.load(); }catch(e){ if(!done){done=true;clearTimeout(to);cleanup();resolve({ok:false,reason:'exception'});} }
+  });
 }
-function yLoad(){
-  const s=SONGS[yIdx];
-  document.getElementById('yCount').textContent=`Brano ${yIdx+1} di ${SONGS.length}`;
-  document.getElementById('yScore').textContent=`Punteggio: ${yScore} / ${SONGS.length}`;
-  document.getElementById('yCover').classList.remove('revealed');
-  document.getElementById('yReveal').classList.add('hidden');
-  document.getElementById('yRev').classList.remove('hidden');
-  document.getElementById('yScoreRow').classList.add('hidden');
-  document.getElementById('ySong').textContent=s.t;
-  document.getElementById('yArtist').textContent=s.a;
-  yCreate();
-}
-document.getElementById('yPlay').onclick=()=>{ if(ytPlayer&&ytPlayer.playVideo){try{ytPlayer.playVideo();}catch(e){}}else{yPending=true;} };
-document.getElementById('yRev').onclick=()=>{
-  document.getElementById('yCover').classList.add('revealed');
-  document.getElementById('yReveal').classList.remove('hidden');
-  document.getElementById('yRev').classList.add('hidden');
-  document.getElementById('yScoreRow').classList.remove('hidden');
-};
-document.getElementById('yOk').onclick=()=>{yScore++;yNext();};
-document.getElementById('yNo').onclick=()=>yNext();
-function yNext(){ if(ytPlayer&&ytPlayer.stopVideo){try{ytPlayer.stopVideo();}catch(e){}} yIdx++; if(yIdx>=SONGS.length){yIdx=0;yScore=0;} yLoad(); }
 
-/* init */
-aLoad(); yLoad();
+async function runTests(){
+  document.getElementById('runBtn').textContent='⏳ Test in corso…';
+  document.getElementById('runBtn').disabled=true;
+  document.getElementById('results').style.display='block';
+
+  // 1. iTunes search API
+  const r1=await probeDomain('https://itunes.apple.com/search?term=queen&limit=1&media=music', 6000);
+  setBadge('t1', r1.ok?'ok':'ko', r1.ok?'raggiungibile':'BLOCCATO ('+(r1.reason||'')+')');
+
+  // 2. Audio preview domain (root ping)
+  const r2=await probeDomain('https://audio-ssl.itunes.apple.com/', 6000);
+  setBadge('t2', r2.ok?'ok':'ko', r2.ok?'raggiungibile':'BLOCCATO ('+(r2.reason||'')+')');
+
+  // 3. Artwork CDN
+  const r3=await probeDomain('https://is1-ssl.mzstatic.com/', 6000);
+  setBadge('t3', r3.ok?'ok':'ko', r3.ok?'raggiungibile':'BLOCCATO ('+(r3.reason||'')+')');
+
+  // 4. Real audio element load (sample pubblico Apple)
+  // URL di esempio pubblico; se non valido, l'esito "error" indica comunque che il dominio risponde o meno
+  const sample='https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview/v4/sample.m4a';
+  const r4=await probeAudioPlay(sample, 8000);
+  setBadge('t4', r4.ok?'ok':'ko', r4.ok?'audio OK':'no audio ('+(r4.reason||'')+')');
+
+  // 5. Control: generic internet (cloudflare)
+  const r5=await probeDomain('https://www.cloudflare.com/cdn-cgi/trace', 6000);
+  setBadge('t5', r5.ok?'ok':'ko', r5.ok?'raggiungibile':'BLOCCATO ('+(r5.reason||'')+')');
+
+  // Summary
+  const sum=`RIASSUNTO TEST (copia e incolla nella chat):
+1. API iTunes: ${r1.ok?'OK':'BLOCCATO'} ${r1.reason||''}
+2. Audio Apple: ${r2.ok?'OK':'BLOCCATO'} ${r2.reason||''}
+3. CDN copertine: ${r3.ok?'OK':'BLOCCATO'} ${r3.reason||''}
+4. Riproduzione audio: ${r4.ok?'OK':'NO'} ${r4.reason||''}
+5. Internet generico: ${r5.ok?'OK':'BLOCCATO'} ${r5.reason||''}`;
+  const s=document.getElementById('summary');
+  s.style.display='block'; s.textContent=sum;
+  document.getElementById('runBtn').textContent='🔁 Ripeti il test';
+  document.getElementById('runBtn').disabled=false;
+}
 </script>
 </body>
 </html>
