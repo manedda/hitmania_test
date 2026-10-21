@@ -4,121 +4,117 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0b0618">
-<title>Hitmania — Test iPhone</title>
+<title>Hitmania — Test Audio iPhone</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;font-family:'Trebuchet MS','Segoe UI',system-ui,sans-serif}
   body{background:linear-gradient(160deg,#0b0618,#14092b);color:#fff;min-height:100vh;padding:22px 16px}
   .wrap{max-width:560px;margin:0 auto}
-  h1{font-size:24px;margin-bottom:4px;background:linear-gradient(90deg,#ff2e93,#ffd23f,#18e0ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+  h1{font-size:22px;margin-bottom:4px;background:linear-gradient(90deg,#ff2e93,#ffd23f,#18e0ff);-webkit-background-clip:text;background-clip:text;color:transparent}
   .sub{color:#b9a8d9;font-size:14px;margin-bottom:18px}
   .card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:16px;margin-bottom:12px}
-  .row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08)}
-  .row:last-child{border-bottom:none}
-  .row .nm{flex:1;font-size:14px}
-  .row .nm small{display:block;color:#8a7bb0;font-size:11px;word-break:break-all}
+  .step{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+  .step:last-child{border-bottom:none}
+  .step .nm{flex:1;font-size:14px}
   .badge{font-size:12px;font-weight:800;padding:5px 10px;border-radius:999px;white-space:nowrap}
   .wait{background:rgba(255,255,255,.12);color:#b9a8d9}
   .ok{background:rgba(43,255,136,.2);color:#2bff88;border:1px solid rgba(43,255,136,.5)}
   .ko{background:rgba(255,91,106,.2);color:#ff8a94;border:1px solid rgba(255,91,106,.5)}
   .btn{display:block;width:100%;border:none;border-radius:14px;padding:16px;font-size:17px;font-weight:800;cursor:pointer;color:#fff;
     background:linear-gradient(90deg,#ff2e93,#8a2be2);margin-top:8px;font-family:inherit}
+  .btn:disabled{opacity:.5}
   .summary{margin-top:14px;padding:14px;border-radius:12px;background:rgba(0,0,0,.3);border:1px dashed rgba(255,255,255,.2);font-size:13px;line-height:1.6;white-space:pre-wrap}
   .hint{color:#b9a8d9;font-size:12px;margin-top:10px;line-height:1.5}
-  code{background:rgba(0,0,0,.4);padding:1px 5px;border-radius:5px;font-size:12px}
+  .now{text-align:center;font-weight:800;margin-top:8px;font-size:15px}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>🔬 Hitmania — Test iPhone</h1>
-  <p class="sub">Verifichiamo quali domini Apple riesce a raggiungere il tuo telefono. Premi il pulsante e aspetta ~20 secondi.</p>
+  <h1>🎧 Test Audio iPhone</h1>
+  <p class="sub">Questo test prova a riprodurre una vera anteprima musicale sul tuo iPhone, aggirando il blocco della ricerca. Premi il pulsante e ascolta.</p>
 
-  <button class="btn" id="runBtn" onclick="runTests()">▶ Avvia il test</button>
+  <button class="btn" id="runBtn" onclick="runTest()">▶ Avvia test audio</button>
 
   <div class="card" id="results" style="display:none">
-    <div class="row"><div class="nm">1. API di ricerca iTunes<small>itunes.apple.com</small></div><span class="badge wait" id="t1">in attesa</span></div>
-    <div class="row"><div class="nm">2. Dominio audio anteprime<small>audio-ssl.itunes.apple.com</small></div><span class="badge wait" id="t2">in attesa</span></div>
-    <div class="row"><div class="nm">3. CDN copertine<small>is1-ssl.mzstatic.com</small></div><span class="badge wait" id="t3">in attesa</span></div>
-    <div class="row"><div class="nm">4. Riproduzione audio reale<small>&lt;audio&gt; da dominio Apple</small></div><span class="badge wait" id="t4">in attesa</span></div>
-    <div class="row"><div class="nm">5. Rete generica (controllo)<small>cloudflare.com</small></div><span class="badge wait" id="t5">in attesa</span></div>
+    <div class="step"><div class="nm">1. Ottengo un brano reale (via proxy)</div><span class="badge wait" id="s1">…</span></div>
+    <div class="step"><div class="nm">2. Carico il file audio Apple</div><span class="badge wait" id="s2">…</span></div>
+    <div class="step"><div class="nm">3. Riproduco l'audio</div><span class="badge wait" id="s3">…</span></div>
+    <div class="now" id="now"></div>
   </div>
 
   <div class="summary" id="summary" style="display:none"></div>
-
-  <p class="hint">ℹ️ Questo test non salva nulla e non richiede login. Serve solo a capire perché le anteprime non partono sul tuo iPhone. Quando finisce, <b>copia e incolla il riassunto</b> nella chat.</p>
+  <p class="hint">ℹ️ Se senti la musica, l'audio sul tuo iPhone funziona: potremo usare un proxy per la ricerca. Copia il riassunto finale e incollalo in chat.</p>
 </div>
 
-<audio id="probeAudio" preload="auto" crossorigin="anonymous"></audio>
+<audio id="player" preload="auto" playsinline></audio>
 
 <script>
-function setBadge(id, state, txt){
-  const el=document.getElementById(id);
-  el.className='badge '+(state==='ok'?'ok':state==='ko'?'ko':'wait');
-  el.textContent=txt;
+function badge(id,st,txt){const e=document.getElementById(id);e.className='badge '+(st==='ok'?'ok':st==='ko'?'ko':'wait');e.textContent=txt;}
+
+// Proxy pubblici CORS da provare in sequenza (dominio NON-Apple → non bloccato dal filtro anti-tracking Apple)
+const PROXIES=[
+  u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  u=>`https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+  u=>`https://thingproxy.freeboard.io/fetch/${u}`
+];
+
+async function getPreviewViaProxy(){
+  const apiUrl='https://itunes.apple.com/search?term=queen%20bohemian%20rhapsody&media=music&entity=song&limit=5&country=IT';
+  for(const mk of PROXIES){
+    try{
+      const r=await fetch(mk(apiUrl),{cache:'no-store'});
+      if(!r.ok) continue;
+      const d=await r.json();
+      if(d&&d.results){ for(const x of d.results){ if(x.previewUrl) return {url:x.previewUrl, name:(x.trackName+' — '+x.artistName), proxy:mk('').slice(0,30)}; } }
+    }catch(e){ /* prova il prossimo */ }
+  }
+  return null;
 }
 
-// Test di raggiungibilità dominio con fetch no-cors: se risolve (anche opaco) = raggiungibile; se rigetta/timeout = bloccato
-function probeDomain(url, timeoutMs){
+function playAudio(url){
   return new Promise((resolve)=>{
+    const a=document.getElementById('player');
     let done=false;
-    const to=setTimeout(()=>{ if(!done){done=true;resolve({ok:false,reason:'timeout'});} }, timeoutMs||6000);
-    fetch(url,{mode:'no-cors',cache:'no-store'})
-      .then(()=>{ if(!done){done=true;clearTimeout(to);resolve({ok:true});} })
-      .catch((e)=>{ if(!done){done=true;clearTimeout(to);resolve({ok:false,reason:(e&&e.message)||'errore'});} });
+    const to=setTimeout(()=>{ if(!done){done=true;resolve({ok:false,reason:'timeout caricamento'});} }, 10000);
+    a.oncanplay=()=>{ badge('s2','ok','caricato'); };
+    a.onplaying=()=>{ if(!done){done=true;clearTimeout(to);resolve({ok:true});} };
+    a.onerror=()=>{ if(!done){done=true;clearTimeout(to);resolve({ok:false,reason:'errore audio ('+((a.error&&a.error.code)||'?')+')'});} };
+    try{
+      a.src=url; a.load();
+      const p=a.play();
+      if(p&&p.catch) p.catch(e=>{ if(!done){done=true;clearTimeout(to);resolve({ok:false,reason:'play bloccato: '+(e&&e.name||e)});} });
+    }catch(e){ if(!done){done=true;clearTimeout(to);resolve({ok:false,reason:'exception'});} }
   });
 }
 
-// Test audio reale: prova a caricare metadati di un file audio Apple noto
-function probeAudioPlay(url, timeoutMs){
-  return new Promise((resolve)=>{
-    let done=false;
-    const a=document.getElementById('probeAudio');
-    const to=setTimeout(()=>{ if(!done){done=true;cleanup();resolve({ok:false,reason:'timeout'});} }, timeoutMs||8000);
-    function cleanup(){ a.oncanplay=null;a.onloadeddata=null;a.onerror=null; }
-    a.oncanplay=()=>{ if(!done){done=true;clearTimeout(to);cleanup();resolve({ok:true});} };
-    a.onloadeddata=()=>{ if(!done){done=true;clearTimeout(to);cleanup();resolve({ok:true});} };
-    a.onerror=()=>{ if(!done){done=true;clearTimeout(to);cleanup();resolve({ok:false,reason:'audio error'});} };
-    try{ a.src=url; a.load(); }catch(e){ if(!done){done=true;clearTimeout(to);cleanup();resolve({ok:false,reason:'exception'});} }
-  });
-}
-
-async function runTests(){
-  document.getElementById('runBtn').textContent='⏳ Test in corso…';
-  document.getElementById('runBtn').disabled=true;
+async function runTest(){
+  const btn=document.getElementById('runBtn');
+  btn.disabled=true; btn.textContent='⏳ Test in corso…';
   document.getElementById('results').style.display='block';
+  document.getElementById('now').textContent='';
 
-  // 1. iTunes search API
-  const r1=await probeDomain('https://itunes.apple.com/search?term=queen&limit=1&media=music', 6000);
-  setBadge('t1', r1.ok?'ok':'ko', r1.ok?'raggiungibile':'BLOCCATO ('+(r1.reason||'')+')');
+  // Step 1
+  badge('s1','wait','cerco…');
+  const prev=await getPreviewViaProxy();
+  if(!prev){ badge('s1','ko','fallito'); finish(false,'Non sono riuscito a ottenere un brano nemmeno via proxy.'); return; }
+  badge('s1','ok','trovato');
+  document.getElementById('now').textContent='🎵 '+prev.name;
 
-  // 2. Audio preview domain (root ping)
-  const r2=await probeDomain('https://audio-ssl.itunes.apple.com/', 6000);
-  setBadge('t2', r2.ok?'ok':'ko', r2.ok?'raggiungibile':'BLOCCATO ('+(r2.reason||'')+')');
+  // Step 2+3
+  badge('s2','wait','carico…'); badge('s3','wait','…');
+  const res=await playAudio(prev.url);
+  if(res.ok){ badge('s2','ok','caricato'); badge('s3','ok','in riproduzione ▶'); finish(true,'',prev); }
+  else { badge('s3','ko',res.reason||'no'); finish(false,res.reason||'',prev); }
+}
 
-  // 3. Artwork CDN
-  const r3=await probeDomain('https://is1-ssl.mzstatic.com/', 6000);
-  setBadge('t3', r3.ok?'ok':'ko', r3.ok?'raggiungibile':'BLOCCATO ('+(r3.reason||'')+')');
-
-  // 4. Real audio element load (sample pubblico Apple)
-  // URL di esempio pubblico; se non valido, l'esito "error" indica comunque che il dominio risponde o meno
-  const sample='https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview/v4/sample.m4a';
-  const r4=await probeAudioPlay(sample, 8000);
-  setBadge('t4', r4.ok?'ok':'ko', r4.ok?'audio OK':'no audio ('+(r4.reason||'')+')');
-
-  // 5. Control: generic internet (cloudflare)
-  const r5=await probeDomain('https://www.cloudflare.com/cdn-cgi/trace', 6000);
-  setBadge('t5', r5.ok?'ok':'ko', r5.ok?'raggiungibile':'BLOCCATO ('+(r5.reason||'')+')');
-
-  // Summary
-  const sum=`RIASSUNTO TEST (copia e incolla nella chat):
-1. API iTunes: ${r1.ok?'OK':'BLOCCATO'} ${r1.reason||''}
-2. Audio Apple: ${r2.ok?'OK':'BLOCCATO'} ${r2.reason||''}
-3. CDN copertine: ${r3.ok?'OK':'BLOCCATO'} ${r3.reason||''}
-4. Riproduzione audio: ${r4.ok?'OK':'NO'} ${r4.reason||''}
-5. Internet generico: ${r5.ok?'OK':'BLOCCATO'} ${r5.reason||''}`;
-  const s=document.getElementById('summary');
-  s.style.display='block'; s.textContent=sum;
-  document.getElementById('runBtn').textContent='🔁 Ripeti il test';
-  document.getElementById('runBtn').disabled=false;
+function finish(ok, err, prev){
+  const btn=document.getElementById('runBtn');
+  btn.disabled=false; btn.textContent='🔁 Ripeti il test';
+  const sum=`RIASSUNTO TEST AUDIO (copia e incolla in chat):
+- Brano ottenuto via proxy: ${prev?('SÌ ('+prev.name+')'):'NO'}
+- Audio riprodotto: ${ok?'SÌ ✅ (ho sentito la musica)':'NO ❌'}
+${err?('- Errore: '+err):''}
+${prev&&prev.proxy?('- Proxy usato: '+prev.proxy):''}`;
+  const s=document.getElementById('summary'); s.style.display='block'; s.textContent=sum;
 }
 </script>
 </body>
