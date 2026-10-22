@@ -46,7 +46,7 @@
       <button class="btn ok" id="dlBtn" onclick="download()">⬇ Scarica previews.json</button>
       <button class="btn" style="background:linear-gradient(90deg,#ff5b6a,#c21d3a)" onclick="reset()">🗑 Azzera progresso</button>
     </div>
-    <div class="hint">Velocità: ~5-8 brani/secondo. Con 3376 brani servono pochi minuti. Tieni la scheda in primo piano.</div>
+    <div class="hint">Modalità gentile: ~1 brano ogni 1,4s per non farsi bloccare da Apple. Con 3376 brani servono ~80 minuti. Puoi fermarti e riprendere quando vuoi (il progresso è salvato). Tieni la scheda aperta in primo piano.</div>
   </div>
 
   <div class="card">
@@ -102,16 +102,16 @@ function _jsonp(term,country){
     document.head.appendChild(s);
   });
 }
+let _rateLimited=false;
 async function tryTerm(term,country){
   const url=`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&entity=song&country=${country}&limit=10`;
-  // metodo primario: fetch (iTunes invia Access-Control-Allow-Origin: * → funziona da https)
   try{
     const r=await fetch(url,{cache:'no-store'});
-    if(r.ok){ const d=await r.json(); _hDiag.fetchOk++; const p=pickPreview(d); if(p) return p; }
-    else { _hDiag.fetchErr++; _hDiag.last='HTTP '+r.status; }
+    if(r.status===403||r.status===429){ _rateLimited=true; _hDiag.fetchErr++; _hDiag.last='HTTP '+r.status+' (rate limit)'; return {__rate:true}; }
+    if(r.ok){ const d=await r.json(); _hDiag.fetchOk++; const p=pickPreview(d); if(p) return p; return null; }
+    _hDiag.fetchErr++; _hDiag.last='HTTP '+r.status;
   }catch(e){ _hDiag.fetchErr++; _hDiag.last='fetch: '+(e&&e.message||e); }
-  // fallback JSONP
-  return await _jsonp(term,country);
+  return null;
 }
 async function testOne(){
   _hDiag={fetchOk:0,fetchErr:0,jsonpOk:0,jsonpErr:0,last:''};
@@ -123,9 +123,15 @@ async function testOne(){
   log(msg); alert(msg);
 }
 async function findPreview(s){
-  const ct=cleanForSearch(s.t), ca=cleanForSearch(s.a), ca1=cleanForSearch(firstArtist(s.a));
-  const terms=[...new Set([ct+' '+ca1, ct+' '+ca, s.t+' '+s.a, ct].map(x=>x.trim()).filter(Boolean))];
-  for(const c of ['IT','US']){ for(const term of terms){ const p=await tryTerm(term,c); if(p) return p; } }
+  const ct=cleanForSearch(s.t), ca1=cleanForSearch(firstArtist(s.a)), ca=cleanForSearch(s.a);
+  // meno tentativi: prima la variante migliore (IT), poi fallback mirati
+  const attempts=[[ct+' '+ca1,'IT'],[ct+' '+ca1,'US'],[ct+' '+ca,'IT']];
+  for(const [term,c] of attempts){
+    const p=await tryTerm(term,c);
+    if(p&&p.__rate) return {__rate:true};   // propaga il rate-limit al loop
+    if(p) return p;
+    await new Promise(r=>setTimeout(r,250)); // piccola pausa tra tentativi
+  }
   return null;
 }
 
@@ -142,26 +148,35 @@ function updateUI(){
   if(processedThisRun>0){ const rate=processedThisRun/((Date.now()-t0)/1000); const left=(total-done)/rate; document.getElementById('eta').textContent=left>60?Math.ceil(left/60)+' min':Math.ceil(left)+' s'; }
 }
 
+let _backoff=30; // secondi, cresce sui 403
 async function start(){
   if(state.running) return;
   state.running=true; t0=Date.now(); processedThisRun=0;
   document.getElementById('startBtn').disabled=true;
   document.getElementById('pauseBtn').disabled=false;
-  log('▶ Avvio da indice '+state.i+'…');
+  log('▶ Avvio GENTILE da indice '+state.i+' (1 brano/~1.4s, pausa auto sui blocchi)…');
   while(state.running && state.i<SONGS.length){
-    const batch=[];
-    for(let k=0;k<4 && state.i+k<SONGS.length;k++){ batch.push(SONGS[state.i+k]); }
-    await Promise.all(batch.map(async s=>{
-      const kk=key(s);
-      if(state.results[kk]!==undefined) return;
-      const p=await findPreview(s);
-      state.results[kk]= p ? {u:p.u, r:p.r} : null;
-      if(!p) log('⚠️ no preview: '+s.t+' — '+s.a);
-    }));
-    state.i+=batch.length; processedThisRun+=batch.length;
-    if(state.i%60===0){ save(); }
+    const s=SONGS[state.i];
+    const kk=key(s);
+    if(state.results[kk]!==undefined){ state.i++; continue; }
+    _rateLimited=false;
+    const p=await findPreview(s);
+    if(p&&p.__rate){
+      // RATE LIMIT: pausa con backoff e NON avanzare (riprova lo stesso brano)
+      log('⏳ Apple ci blocca (403). Pausa '+_backoff+'s poi riprendo… (brano '+(state.i+1)+')');
+      save();
+      let waited=0;
+      while(state.running && waited<_backoff){ await new Promise(r=>setTimeout(r,1000)); waited++; }
+      _backoff=Math.min(300,Math.round(_backoff*1.8)); // 30→54→97→175→300s
+      continue;
+    }
+    _backoff=30; // reset dopo un successo
+    state.results[kk]= p ? {u:p.u, r:p.r} : null;
+    if(!p) log('⚠️ no preview: '+s.t+' — '+s.a);
+    state.i++; processedThisRun++;
+    if(state.i%40===0){ save(); }
     updateUI();
-    await new Promise(r=>setTimeout(r,120)); // gentile con l'API
+    await new Promise(r=>setTimeout(r,1400)); // ~1 brano ogni 1.4s → gentile con l'API
   }
   save(); updateUI();
   state.running=false;
